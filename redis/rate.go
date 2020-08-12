@@ -136,14 +136,16 @@ func Every(interval time.Duration) Limit {
 
 // Allow is shorthand for AllowN(time.Now(), 1).
 func (lim *Limiter) Allow(n int) bool {
-	return lim.AllowN(time.Now(), n)
+	res, _ := lim.AllowN(time.Now(), n)
+	return res
 }
 
 // AllowN reports whether n events may happen at time now.
 // Use this method if you intend to drop / skip events that exceed the rate limit.
 // Otherwise use Reserve or Wait.
-func (lim *Limiter) AllowN(now time.Time, n int) bool {
-	return lim.reserveN(now, n).ok
+func (lim *Limiter) AllowN(now time.Time, n int) (allowed bool, remaining int) {
+	result := lim.reserveN(now, n)
+	return result.ok, result.tokens
 }
 
 // A Reservation holds information about events that are permitted by a Limiter to happen after a delay.
