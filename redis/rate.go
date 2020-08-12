@@ -59,12 +59,8 @@ func Client() *redis.Client {
 }
 
 // SetRedis sets the redis client.
-func SetRedis(config *ConfigRedis) error {
-	if config == nil {
-		return errors.New("redis config is empty")
-	}
-
-	redisClient = newRedisClient(*config)
+func SetRedis(client *redis.Client) error {
+	redisClient = client
 	if redisClient == nil {
 		return errors.New("redis client is nil")
 	}
@@ -74,7 +70,7 @@ func SetRedis(config *ConfigRedis) error {
 		for {
 			select {
 			case <-timer.C:
-				loadScript()
+				_ = loadScript()
 			}
 		}
 	}()
@@ -139,8 +135,8 @@ func Every(interval time.Duration) Limit {
 }
 
 // Allow is shorthand for AllowN(time.Now(), 1).
-func (lim *Limiter) Allow() bool {
-	return lim.AllowN(time.Now(), 1)
+func (lim *Limiter) Allow(n int) bool {
+	return lim.AllowN(time.Now(), n)
 }
 
 // AllowN reports whether n events may happen at time now.
