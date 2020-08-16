@@ -61,9 +61,9 @@ func Client() *redis.Client {
 }
 
 // SetRedis sets the redis client.
-func SetRedis(client *redis.Client) error {
+func SetRedis(context context.Context, client *redis.Client) error {
 	redisClient = client
-	ctx = context.Background()
+	ctx = context
 
 	if redisClient == nil {
 		return errors.New("redis client is nil")
