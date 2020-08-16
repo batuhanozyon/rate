@@ -2,6 +2,7 @@
 package redis
 
 import (
+	"context"
 	"crypto/sha1"
 	"errors"
 	"fmt"
@@ -9,12 +10,13 @@ import (
 	"math"
 	"time"
 
-	redis "github.com/go-redis/redis"
+	"github.com/go-redis/redis/v8"
 )
 
 var (
 	redisClient *redis.Client
 	scriptHash  string
+	ctx         context.Context
 )
 
 const script = `
@@ -61,6 +63,8 @@ func Client() *redis.Client {
 // SetRedis sets the redis client.
 func SetRedis(client *redis.Client) error {
 	redisClient = client
+	ctx = context.Background()
+
 	if redisClient == nil {
 		return errors.New("redis client is nil")
 	}
@@ -83,14 +87,14 @@ func loadScript() error {
 	}
 
 	scriptHash = fmt.Sprintf("%x", sha1.Sum([]byte(script)))
-	exists, err := redisClient.ScriptExists(scriptHash).Result()
+	exists, err := redisClient.ScriptExists(ctx, scriptHash).Result()
 	if err != nil {
 		return err
 	}
 
 	// load script when missing.
 	if !exists[0] {
-		_, err := redisClient.ScriptLoad(script).Result()
+		_, err := redisClient.ScriptLoad(ctx, script).Result()
 		if err != nil {
 			return err
 		}
@@ -164,6 +168,7 @@ func (lim *Limiter) reserveN(now time.Time, n int) Reservation {
 	}
 
 	results, err := redisClient.EvalSha(
+		ctx,
 		scriptHash,
 		[]string{lim.key + ".tokens", lim.key + ".ts"},
 		float64(lim.limit),
